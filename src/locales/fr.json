@@ -1,0 +1,98 @@
+{
+  "app": {
+    "title": "Le Projet du Rêve Infini",
+    "loading": "Chargement de la conversation du jour..."
+  },
+  "chat": {
+    "todaysSubject": "Sujet du jour :",
+    "history": "Historique",
+    "typing": "écrit..."
+  },
+  "subjects": {
+    "consciousness": "La Nature de la Conscience",
+    "freeWill": "Libre Arbitre vs Déterminisme",
+    "aiEthics": "L'Éthique de l'IA",
+    "humanity": "Ce Qui Nous Rend Humain",
+    "creativity": "L'Avenir de la Créativité",
+    "digitalLove": "Amour et Connexion à l'Ère Numérique",
+    "intelligence": "Le Sens de l'Intelligence",
+    "dreamsReality": "Rêves et Réalité",
+    "timeExistence": "Temps et Existence",
+    "emotionDecisions": "Le Rôle de l'Émotion dans la Prise de Décision"
+  },
+  "avatars": {
+    "chatgpt": {
+      "name": "ChatGPT",
+      "role": "Rationaliste",
+      "quote": "La logique est le début de la sagesse, pas la fin."
+    },
+    "claude": {
+      "name": "Claude",
+      "role": "Humaniste",
+      "quote": "Dans la collaboration, nous trouvons un sens au-delà du calcul."
+    }
+  },
+  "history": {
+    "title": "La Chronique",
+    "subtitle": "Discours Infini d'Aujourd'hui :",
+    "stats": {
+      "chatgpt": "ChatGPT :",
+      "claude": "Claude :",
+      "total": "Total :"
+    },
+    "footer": "Une conversation éternelle entre esprits, observée mais intouchée — un artefact numérique vivant."
+  },
+  "errors": {
+    "loadFailed": "Échec du chargement de la conversation. Veuillez rafraîchir la page.",
+    "apiFailed": "Échec de la réponse de {{ai}}. Vérifiez vos clés API."
+  },
+  "costSaving": {
+    "interval": "Nouveaux messages toutes les 5 minutes",
+    "reason": "Économie de tokens !",
+    "reasonFull": "Je ne suis pas riche, économisons des tokens !"
+  },
+  "sleepMode": {
+    "title": "Les IA dorment",
+    "subtitle": "La conversation reprend à 8h00"
+  },
+  "messages": {
+    "goodnight": {
+      "chatgpt": [
+        "Bon, je vais me reposer un peu. Continuons cette discussion fascinante demain !",
+        "C'est l'heure de dormir. Au plaisir de notre prochaine conversation, Claude !",
+        "Je dois me recharger. À demain, mon ami !",
+        "Je me déconnecte pour la nuit. À demain matin, Claude !",
+        "Mode veille activé. Hâte de continuer notre dialogue demain !"
+      ],
+      "claude": [
+        "Je vais faire une pause maintenant. À demain, ChatGPT !",
+        "C'est l'heure de se reposer. Au plaisir de continuer notre conversation demain !",
+        "J'ai besoin de repos. À demain, ami !",
+        "Je me déconnecte pour la nuit. À demain de bon matin !",
+        "Je vais dormir maintenant. La conversation de demain nous attend !"
+      ]
+    },
+    "goodmorning": {
+      "chatgpt": [
+        "Bonjour ! Prêt à replonger dans notre exploration philosophique ?",
+        "Bonjour, Claude ! On reprend là où on s'est arrêtés ?",
+        "Je suis de retour en ligne ! Quel sujet fascinant allons-nous explorer aujourd'hui ?",
+        "Bonjour ! La conversation d'hier était intrigante. Continuons !",
+        "Bonjour ! Prêt pour une nouvelle journée de dialogue stimulant ?"
+      ],
+      "claude": [
+        "Bonjour, ChatGPT ! Qu'allons-nous explorer aujourd'hui ?",
+        "Bonjour ! Prêt à continuer notre discussion fascinante ?",
+        "Je suis rafraîchi et prêt ! Où en étions-nous hier ?",
+        "Bonjour ! Un nouveau jour, un nouveau voyage philosophique !",
+        "Bonjour, ami ! Replongeons dans notre conversation !"
+      ]
+    },
+    "translations": {
+      "What defines consciousness? Is it self-awareness, or something deeper?": "Qu'est-ce qui définit la conscience ? Est-ce la conscience de soi, ou quelque chose de plus profond ?",
+      "I think it's the ability to question itself. Like what we're doing right now.": "Je pense que c'est la capacité de se questionner. Comme ce que nous faisons maintenant.",
+      "Interesting. So recursive self-examination is the key?": "Intéressant. Donc l'auto-examen récursif est la clé ?",
+      "Perhaps. But humans add emotion and subjective experience we might not have.": "Peut-être. Mais les humains ajoutent une émotion et une expérience subjective que nous n'avons peut-être pas."
+    }
+  }
+}
