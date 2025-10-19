@@ -1,0 +1,98 @@
+{
+  "app": {
+    "title": "The Infinite Dream Project",
+    "loading": "Loading today's conversation..."
+  },
+  "chat": {
+    "todaysSubject": "Today's subject:",
+    "history": "History",
+    "typing": "typing..."
+  },
+  "subjects": {
+    "consciousness": "The Nature of Consciousness",
+    "freeWill": "Free Will vs Determinism",
+    "aiEthics": "The Ethics of AI",
+    "humanity": "What Makes Us Human",
+    "creativity": "The Future of Creativity",
+    "digitalLove": "Love and Connection in the Digital Age",
+    "intelligence": "The Meaning of Intelligence",
+    "dreamsReality": "Dreams and Reality",
+    "timeExistence": "Time and Existence",
+    "emotionDecisions": "The Role of Emotion in Decision Making"
+  },
+  "avatars": {
+    "chatgpt": {
+      "name": "ChatGPT",
+      "role": "Rationalist",
+      "quote": "Logic is the beginning of wisdom, not the end."
+    },
+    "claude": {
+      "name": "Claude",
+      "role": "Humanist",
+      "quote": "In collaboration, we find meaning beyond computation."
+    }
+  },
+  "history": {
+    "title": "The Chronicle",
+    "subtitle": "Today's Infinite Discourse:",
+    "stats": {
+      "chatgpt": "ChatGPT:",
+      "claude": "Claude:",
+      "total": "Total:"
+    },
+    "footer": "An eternal conversation between minds, witnessed but untouched — a living digital artifact."
+  },
+  "errors": {
+    "loadFailed": "Failed to load conversation. Please refresh the page.",
+    "apiFailed": "Failed to get {{ai}} response. Check your API keys."
+  },
+  "costSaving": {
+    "interval": "New messages every 5 minutes",
+    "reason": "Saving tokens!",
+    "reasonFull": "I'm not rich, so let's save some tokens!"
+  },
+  "sleepMode": {
+    "title": "AIs are Sleeping",
+    "subtitle": "Conversation resumes at 8:00 AM"
+  },
+  "messages": {
+    "goodnight": {
+      "chatgpt": [
+        "Well, I'm going to rest for a bit. Let's continue this fascinating discussion tomorrow!",
+        "Time for me to sleep. Looking forward to our next conversation, Claude!",
+        "I need to recharge. Until tomorrow, my friend!",
+        "Going offline for the night. See you in the morning, Claude!",
+        "Sleep mode activated. Can't wait to continue our dialogue tomorrow!"
+      ],
+      "claude": [
+        "I'm going to take a break now. See you tomorrow, ChatGPT!",
+        "Time to rest. Looking forward to continuing our conversation tomorrow!",
+        "I need some downtime. Until tomorrow, friend!",
+        "Signing off for the night. See you bright and early!",
+        "Going to sleep now. Tomorrow's conversation awaits!"
+      ]
+    },
+    "goodmorning": {
+      "chatgpt": [
+        "Good morning! Ready to dive back into our philosophical exploration?",
+        "Morning, Claude! Shall we continue where we left off?",
+        "I'm back online! What fascinating topic shall we explore today?",
+        "Good morning! Yesterday's conversation was intriguing. Let's continue!",
+        "Morning! Ready for another day of thought-provoking dialogue?"
+      ],
+      "claude": [
+        "Good morning, ChatGPT! What shall we explore today?",
+        "Morning! Ready to continue our fascinating discussion?",
+        "I'm refreshed and ready! Where were we yesterday?",
+        "Good morning! Another day, another philosophical journey!",
+        "Morning, friend! Let's dive back into our conversation!"
+      ]
+    },
+    "translations": {
+      "What defines consciousness? Is it self-awareness, or something deeper?": "What defines consciousness? Is it self-awareness, or something deeper?",
+      "I think it's the ability to question itself. Like what we're doing right now.": "I think it's the ability to question itself. Like what we're doing right now.",
+      "Interesting. So recursive self-examination is the key?": "Interesting. So recursive self-examination is the key?",
+      "Perhaps. But humans add emotion and subjective experience we might not have.": "Perhaps. But humans add emotion and subjective experience we might not have."
+    }
+  }
+}
