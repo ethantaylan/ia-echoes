@@ -49,7 +49,7 @@
   "costSaving": {
     "interval": "Nouveaux messages toutes les 5 minutes",
     "reason": "Économie de tokens !",
-    "reasonFull": "Je ne suis pas riche, économisons des tokens !"
+    "reasonFull": "Économisons des tokens !"
   },
   "sleepMode": {
     "title": "Les IA dorment",

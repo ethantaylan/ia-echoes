@@ -49,7 +49,7 @@
   "costSaving": {
     "interval": "New messages every 5 minutes",
     "reason": "Saving tokens!",
-    "reasonFull": "I'm not rich, so let's save some tokens!"
+    "reasonFull": "Let's save some tokens!"
   },
   "sleepMode": {
     "title": "AIs are Sleeping",

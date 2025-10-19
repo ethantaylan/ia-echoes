@@ -11,8 +11,9 @@ import {
 import { CONVERSATION_INTERVAL_MS } from "./constants/config";
 import { useSleepSchedule } from "./hooks/useSleepSchedule";
 import { isInSleepPeriod } from "./utils/schedule.utils";
-import { translateMessageCached } from "./services/translationService";
+// Removed MyMemory translation service - AI messages are displayed in original language
 import { getTodaySubject as getTodaySubjectFromDB } from "./services/supabaseService";
+import { translateSubject } from "./utils/subjectTranslation.utils";
 
 interface Message {
   sender: "ChatGPT" | "Claude" | "Human";
@@ -29,7 +30,6 @@ export default function App() {
   // State for today's subject (loaded from DB as full text)
   const [subjectText, setSubjectText] = useState<string>("");
   const [messages, setMessages] = useState<Message[]>([]);
-  const [translatedMessages, setTranslatedMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [typingAI, setTypingAI] = useState<"ChatGPT" | "Claude" | null>(null);
   const [nextSpeaker, setNextSpeaker] = useState<"ChatGPT" | "Claude">(
@@ -66,26 +66,8 @@ export default function App() {
     scrollToBottom();
   }, [messages, isTyping]); // Scroll when messages change OR when typing state changes
 
-  // Translate messages when language changes or messages update
-  useEffect(() => {
-    const translateAllMessages = async () => {
-      if (messages.length === 0) {
-        setTranslatedMessages([]);
-        return;
-      }
-
-      const currentLang = i18n.language as "en" | "fr";
-
-      // Translate all messages
-      const translated = await Promise.all(
-        messages.map((msg) => translateMessageCached(msg, currentLang))
-      );
-
-      setTranslatedMessages(translated);
-    };
-
-    translateAllMessages();
-  }, [messages, i18n.language]); // Re-translate when messages or language changes
+  // No translation needed - AI messages are displayed in their original language
+  // Only UI elements are translated using i18next static files
 
   // Set up Supabase Realtime subscription for new messages
   useEffect(() => {
@@ -132,7 +114,10 @@ export default function App() {
             // Double-check for duplicates based on message_order
             const exists = prev.some((m) => m.id === message.id);
             if (exists) return prev;
-            return [...prev, message];
+
+            // Add message and sort by ID (message_order) to maintain chronological order
+            const updated = [...prev, message];
+            return updated.sort((a, b) => a.id - b.id);
           });
 
           // Update next speaker based on who just spoke
@@ -229,7 +214,11 @@ export default function App() {
       // Track this as a local message
       localMessageIds.current.add(messageCount + 1);
 
-      setMessages((prev) => [...prev, newMessage]);
+      setMessages((prev) => {
+        const updated = [...prev, newMessage];
+        // Always sort by ID to maintain chronological order
+        return updated.sort((a, b) => a.id - b.id);
+      });
       setMessageCount((prev) => prev + 1);
 
       // Save to database
@@ -272,7 +261,11 @@ export default function App() {
       // Track this as a local message
       localMessageIds.current.add(messageCount + 1);
 
-      setMessages((prev) => [...prev, newMessage]);
+      setMessages((prev) => {
+        const updated = [...prev, newMessage];
+        // Always sort by ID to maintain chronological order
+        return updated.sort((a, b) => a.id - b.id);
+      });
       setMessageCount((prev) => prev + 1);
 
       // Save to database
@@ -331,7 +324,11 @@ export default function App() {
       // Track this as a local message to prevent duplicate from Realtime
       localMessageIds.current.add(newMessageOrder);
 
-      setMessages((prev) => [...prev, newMessage]);
+      setMessages((prev) => {
+        const updated = [...prev, newMessage];
+        // Always sort by ID to maintain chronological order
+        return updated.sort((a, b) => a.id - b.id);
+      });
       setMessageCount(newMessageOrder);
 
       // Switch to the other AI for next turn
@@ -545,10 +542,10 @@ export default function App() {
               <div className="px-4 sm:px-8 py-4 sm:py-5 border-b border-white/10 bg-white/5 flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs sm:text-sm text-white/50 mb-1">
-                    Today&rsquo;s subject:
+                    {t('chat.todaysSubject')}
                   </p>
                   <h3 className="text-lg sm:text-2xl font-bold text-white line-clamp-2">
-                    {subjectText}
+                    {translateSubject(subjectText, t)}
                   </h3>
                 </div>
 
@@ -576,7 +573,7 @@ export default function App() {
 
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 scroll-smooth">
-                {(translatedMessages.length > 0 ? translatedMessages : messages).map((message) => (
+                {messages.map((message) => (
                   <div
                     key={message.id}
                     className={`flex gap-4 ${
@@ -747,9 +744,9 @@ export default function App() {
                     The Chronicle
                   </h2>
                   <p className="text-xs sm:text-sm text-white/60 line-clamp-2">
-                    Today&rsquo;s Infinite Discourse:{" "}
+                    {t('history.subtitle')}{" "}
                     <span className="text-white/90 font-medium">
-                      {subjectText}
+                      {translateSubject(subjectText, t)}
                     </span>
                   </p>
                 </div>
@@ -813,7 +810,7 @@ export default function App() {
 
                 {/* Messages */}
                 <div className="space-y-4 sm:space-y-6">
-                  {(translatedMessages.length > 0 ? translatedMessages : messages).map((message, index) => (
+                  {messages.map((message, index) => (
                     <div
                       key={message.id}
                       className="relative pl-12 sm:pl-20 animate-fade-in"
