@@ -5,15 +5,17 @@ import { callOpenAI, callClaude } from "./services/aiService";
 import {
   getTodayConversation,
   getOrCreateTodayConversation,
-  saveMessage,
+  // saveBilingualMessage, // Not used - Netlify function handles all saves
   supabase,
-} from "./services/supabaseService";
-import { CONVERSATION_INTERVAL_MS } from "./constants/config";
+} from "./services/supabaseBilingualService";
+// import { CONVERSATION_INTERVAL_MS } from "./constants/config"; // Not needed - Netlify function handles timing
 import { useSleepSchedule } from "./hooks/useSleepSchedule";
-import { isInSleepPeriod } from "./utils/schedule.utils";
+// import { isInSleepPeriod } from "./utils/schedule.utils"; // Not needed - Netlify function handles sleep check
 // Removed MyMemory translation service - AI messages are displayed in original language
-import { getTodaySubject as getTodaySubjectFromDB } from "./services/supabaseService";
+import { getTodaySubject as getTodaySubjectFromDB } from "./services/supabaseBilingualService";
 import { translateSubject } from "./utils/subjectTranslation.utils";
+import { formatRelativeTime } from "./utils/timestamp.utils";
+import { useTimestampUpdater } from "./hooks/useTimestampUpdater";
 
 interface Message {
   sender: "ChatGPT" | "Claude" | "Human";
@@ -27,6 +29,9 @@ export default function App() {
   const { t, i18n } = useTranslation();
   // const selectedBackground = "/src/assets/bg2.mp4";
 
+  // Auto-update timestamps every minute
+  useTimestampUpdater(60000); // Updates every 60 seconds
+
   // State for today's subject (loaded from DB as full text)
   const [subjectText, setSubjectText] = useState<string>("");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -38,7 +43,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [messageCount, setMessageCount] = useState(0);
-  const conversationTimerRef = useRef<number | null>(null);
+  // const conversationTimerRef = useRef<number | null>(null); // Not needed - Netlify function handles conversation
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -73,15 +78,19 @@ export default function App() {
   useEffect(() => {
     if (!conversationId) return;
 
+    // Subscribe to the correct table based on current language
+    const currentLang = i18n.language as "en" | "fr";
+    const messagesTable = currentLang === "fr" ? "messages_fr" : "messages_en";
+
     // Subscribe to new messages in real-time
     const channel = supabase
-      .channel("messages-channel")
+      .channel(`${messagesTable}-channel`)
       .on(
         "postgres_changes",
         {
           event: "INSERT",
           schema: "public",
-          table: "messages",
+          table: messagesTable,
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
@@ -92,6 +101,7 @@ export default function App() {
             sender: string;
             content: string;
             message_order: number;
+            timestamp: string;
           };
 
           // Skip if this message was created locally (optimistic update)
@@ -107,7 +117,7 @@ export default function App() {
             id: newMsg.message_order,
             sender: newMsg.sender as "ChatGPT" | "Claude" | "Human",
             content: newMsg.content,
-            timestamp: "Just now",
+            timestamp: newMsg.timestamp || new Date().toISOString(),
           };
 
           setMessages((prev) => {
@@ -130,7 +140,7 @@ export default function App() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [conversationId, messages.length]);
+  }, [conversationId, i18n.language]);
 
   // Load today's subject and conversation on mount
   useEffect(() => {
@@ -142,9 +152,10 @@ export default function App() {
         const todaySubject = await getTodaySubjectFromDB();
         setSubjectText(todaySubject);
 
-        // Now load the conversation
+        // Now load the conversation in the current language
+        const currentLang = i18n.language as "en" | "fr";
         const { conversation, messages: loadedMessages } =
-          await getTodayConversation();
+          await getTodayConversation(currentLang);
 
         if (conversation && loadedMessages.length > 0) {
           // Load existing conversation
@@ -197,6 +208,24 @@ export default function App() {
     loadTodayConversation();
   }, [t]);
 
+  // Reload messages when language changes
+  useEffect(() => {
+    const reloadMessagesInLanguage = async () => {
+      if (!conversationId) return;
+
+      try {
+        const currentLang = i18n.language as "en" | "fr";
+        const { messages: loadedMessages } = await getTodayConversation(currentLang);
+        setMessages(loadedMessages);
+        console.log(`✅ Messages reloaded in ${currentLang.toUpperCase()}`);
+      } catch (err) {
+        console.error("Error reloading messages in new language:", err);
+      }
+    };
+
+    reloadMessagesInLanguage();
+  }, [i18n.language, conversationId]);
+
   // Send goodnight message before sleep
   useEffect(() => {
     if (!shouldSleep || !conversationId || isTyping) return;
@@ -208,7 +237,7 @@ export default function App() {
         id: messageCount + 1,
         sender: nextSpeaker,
         content: goodnightContent,
-        timestamp: "Just now",
+        timestamp: new Date().toISOString(),
       };
 
       // Track this as a local message
@@ -221,13 +250,14 @@ export default function App() {
       });
       setMessageCount((prev) => prev + 1);
 
-      // Save to database
-      await saveMessage(
-        conversationId,
-        nextSpeaker,
-        goodnightContent,
-        messageCount + 1
-      );
+      // Save to database (handled by Netlify function in production)
+      // await saveBilingualMessage(
+      //   conversationId,
+      //   nextSpeaker,
+      //   goodnightContent,
+      //   goodnightContent, // TODO: translate if needed
+      //   messageCount + 1
+      // );
 
       // Stop typing indicator
       setIsTyping(false);
@@ -255,7 +285,7 @@ export default function App() {
         id: messageCount + 1,
         sender: nextSpeaker,
         content: morningContent,
-        timestamp: "Just now",
+        timestamp: new Date().toISOString(),
       };
 
       // Track this as a local message
@@ -268,13 +298,14 @@ export default function App() {
       });
       setMessageCount((prev) => prev + 1);
 
-      // Save to database
-      await saveMessage(
-        conversationId,
-        nextSpeaker,
-        morningContent,
-        messageCount + 1
-      );
+      // Save to database (handled by Netlify function in production)
+      // await saveBilingualMessage(
+      //   conversationId,
+      //   nextSpeaker,
+      //   morningContent,
+      //   morningContent, // TODO: translate if needed
+      //   messageCount + 1
+      // );
 
       // Switch to next AI
       const nextAI = nextSpeaker === "ChatGPT" ? "Claude" : "ChatGPT";
@@ -298,6 +329,9 @@ export default function App() {
   ]);
 
   // Add new AI message with optimistic UI update
+  // NOTE: This function is only used for local development
+  // In production, Netlify scheduled function handles message generation
+  // @ts-expect-error - Keep for local dev, uncomment client-side loop to use
   const addAIMessage = async (speaker: "ChatGPT" | "Claude") => {
     if (!conversationId || isLoading || !subjectText) return;
 
@@ -318,7 +352,7 @@ export default function App() {
         id: newMessageOrder,
         sender: speaker,
         content: content,
-        timestamp: "Just now",
+        timestamp: new Date().toISOString(),
       };
 
       // Track this as a local message to prevent duplicate from Realtime
@@ -335,15 +369,12 @@ export default function App() {
       const nextAI = speaker === "ChatGPT" ? "Claude" : "ChatGPT";
       setNextSpeaker(nextAI);
 
-      // Save to Supabase in the background (non-blocking)
-      // This will trigger Realtime for other clients, but we already showed it locally
-      saveMessage(conversationId, speaker, content, newMessageOrder).catch(
-        (err) => {
-          console.error("Failed to save message to Supabase:", err);
-          // We don't remove the message from UI even if save fails
-          // The message is already displayed, this ensures smooth UX
-        }
-      );
+      // Save to Supabase in the background (handled by Netlify function in production)
+      // saveBilingualMessage(conversationId, speaker, content, content, newMessageOrder).catch(
+      //   (err: Error) => {
+      //     console.error("Failed to save message to Supabase:", err);
+      //   }
+      // );
 
       // Stop current typing indicator
       setIsTyping(false);
@@ -364,7 +395,9 @@ export default function App() {
     }
   };
 
-  // Conversation loop - with sleep schedule (5 minutes interval)
+  // Conversation loop - DISABLED (now handled by Netlify scheduled function)
+  // The Netlify function runs every 5 minutes server-side, so we don't need client-side generation
+  // This prevents duplicate messages and ensures conversation continues even when no users are connected
   useEffect(() => {
     // Don't start the loop until data is loaded
     if (isLoading || !conversationId) return;
@@ -378,22 +411,25 @@ export default function App() {
       return;
     }
 
-    // Start the conversation loop
+    // CLIENT-SIDE CONVERSATION LOOP DISABLED
+    // Netlify scheduled function handles all message generation now
+    // Uncomment below ONLY for local development without Netlify function:
+
+    /*
     conversationTimerRef.current = window.setInterval(() => {
-      // Double-check we're not sleeping
       if (isInSleepPeriod()) {
         console.log("💤 Sleep period started. Stopping conversation.");
         return;
       }
-
       addAIMessage(nextSpeaker);
-    }, CONVERSATION_INTERVAL_MS); // 5 minutes = 300000ms
+    }, CONVERSATION_INTERVAL_MS);
 
     return () => {
       if (conversationTimerRef.current) {
         clearInterval(conversationTimerRef.current);
       }
     };
+    */
   }, [
     nextSpeaker,
     messages,
@@ -406,20 +442,20 @@ export default function App() {
 
   return (
     <div className="min-h-screen w-screen bg-black relative overflow-hidden flex flex-col">
-      {/* Local Video Background */}
-      {/* <div className="absolute inset-0 w-full h-full overflow-hidden grayscale">
+      {/* Pexels Video Background - Abstract Explosion */}
+      <div className="absolute inset-0 w-full h-full overflow-hidden">
         <video
-          key={selectedBackground}
-          className="absolute inset-0 w-full h-full object-cover"
+          key='bg'
+          className="absolute inset-0 w-full h-full object-cover opacity-20"
           autoPlay
           loop
           muted
           playsInline
         >
-          <source src={selectedBackground} type="video/mp4" />
+          <source src="https://videos.pexels.com/video-files/5091624/5091624-uhd_2560_1440_25fps.mp4" type="video/mp4" />
         </video>
-        <div className="absolute inset-0 bg-black/90"></div>
-      </div> */}
+        <div className="absolute inset-0 bg-black/80"></div>
+      </div>
 
       {/* Loading Screen */}
       {isLoading && (
@@ -607,7 +643,7 @@ export default function App() {
                                 {message.sender}
                               </span>
                               <span className="text-[10px] sm:text-xs text-white/40">
-                                {message.timestamp}
+                                {formatRelativeTime(message.timestamp)}
                               </span>
                             </div>
                             <p className="text-sm sm:text-base leading-relaxed text-white">
@@ -627,7 +663,7 @@ export default function App() {
                               HUMAN PERSPECTIVE
                             </span>
                             <span className="text-xs text-white/40">
-                              {message.timestamp}
+                              {formatRelativeTime(message.timestamp)}
                             </span>
                           </div>
                           <p className="text-base leading-relaxed text-white/90 italic">
@@ -874,7 +910,7 @@ export default function App() {
                             </span>
                           </div>
                           <span className="text-[10px] sm:text-xs text-white/40 group-hover:text-white/60 transition-colors flex-shrink-0">
-                            {message.timestamp}
+                            {formatRelativeTime(message.timestamp)}
                           </span>
                         </div>
 

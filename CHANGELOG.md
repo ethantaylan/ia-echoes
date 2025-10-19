@@ -7,6 +7,8 @@
 - ✅ Server-side conversation engine that runs independently of user connections
 - ✅ Comprehensive deployment guides (DEPLOYMENT.md)
 - ✅ Translation implementation guide (TRANSLATION-GUIDE.md)
+- ✅ Dynamic timestamp updates - timestamps now update automatically every minute
+- ✅ Subject translation - daily subjects now translate between EN/FR
 
 ### Changed
 - 🔄 **BREAKING:** Removed MyMemory API translation service
@@ -25,6 +27,8 @@
 - 🐛 Poor translation quality issues resolved
 - 🐛 Language switching now instant (was slow due to API calls)
 - 🐛 Message ordering fixed - messages now always display in chronological order
+- 🐛 Timestamps now update automatically - no page refresh needed
+- 🐛 Removed "I'm not rich" messaging - now says "Let's save tokens"
 
 ## Benefits of Changes
 

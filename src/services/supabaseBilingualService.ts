@@ -34,6 +34,13 @@ export interface DBMessage {
 }
 
 /**
+ * Get the appropriate table name based on language
+ */
+function getMessagesTable(language: 'en' | 'fr'): string {
+  return language === 'fr' ? 'messages_fr' : 'messages_en';
+}
+
+/**
  * Get or create today's conversation
  */
 export async function getOrCreateTodayConversation(subject: string): Promise<number> {
@@ -50,11 +57,11 @@ export async function getOrCreateTodayConversation(subject: string): Promise<num
 }
 
 /**
- * Get today's conversation with all messages
+ * Get today's conversation with messages in specified language
  */
-export async function getTodayConversation(): Promise<{ conversation: Conversation | null; messages: Message[] }> {
-  // Get today's date in YYYY-MM-DD format
+export async function getTodayConversation(language: 'en' | 'fr' = 'en'): Promise<{ conversation: Conversation | null; messages: Message[] }> {
   const today = new Date().toISOString().split('T')[0];
+  const messagesTable = getMessagesTable(language);
 
   // Get conversation
   const { data: conversationData, error: conversationError } = await supabase
@@ -65,31 +72,30 @@ export async function getTodayConversation(): Promise<{ conversation: Conversati
 
   if (conversationError) {
     if (conversationError.code === 'PGRST116') {
-      // No conversation found for today
       return { conversation: null, messages: [] };
     }
     console.error('Error fetching conversation:', conversationError);
     throw conversationError;
   }
 
-  // Get messages
+  // Get messages in the requested language
   const { data: messagesData, error: messagesError } = await supabase
-    .from('messages')
+    .from(messagesTable)
     .select('*')
     .eq('conversation_id', conversationData.id)
     .order('message_order', { ascending: true });
 
   if (messagesError) {
-    console.error('Error fetching messages:', messagesError);
+    console.error(`Error fetching ${language} messages:`, messagesError);
     throw messagesError;
   }
 
-  // Transform messages to match the app format
+  // Transform messages
   const messages: Message[] = (messagesData || []).map((msg: DBMessage, index: number) => ({
-    id: index + 1, // Use sequential IDs for the app
+    id: index + 1,
     sender: msg.sender as "ChatGPT" | "Claude" | "Human",
     content: msg.content,
-    timestamp: msg.timestamp, // Keep raw ISO timestamp for dynamic formatting in UI
+    timestamp: msg.timestamp,
   }));
 
   return {
@@ -99,31 +105,48 @@ export async function getTodayConversation(): Promise<{ conversation: Conversati
 }
 
 /**
- * Save a new message to today's conversation
+ * Save a bilingual message (saves to both EN and FR tables)
  */
-export async function saveMessage(
+export async function saveBilingualMessage(
   conversationId: number,
   sender: "ChatGPT" | "Claude" | "Human",
-  content: string,
+  contentEn: string,
+  contentFr: string,
   messageOrder: number
 ): Promise<void> {
-  const { error } = await supabase
-    .from('messages')
+  // Save English version
+  const { error: errorEn } = await supabase
+    .from('messages_en')
     .insert({
       conversation_id: conversationId,
       sender,
-      content,
+      content: contentEn,
       message_order: messageOrder
     });
 
-  if (error) {
-    console.error('Error saving message:', error);
-    throw error;
+  if (errorEn) {
+    console.error('Error saving English message:', errorEn);
+    throw errorEn;
+  }
+
+  // Save French version
+  const { error: errorFr } = await supabase
+    .from('messages_fr')
+    .insert({
+      conversation_id: conversationId,
+      sender,
+      content: contentFr,
+      message_order: messageOrder
+    });
+
+  if (errorFr) {
+    console.error('Error saving French message:', errorFr);
+    throw errorFr;
   }
 }
 
 /**
- * Get all historical conversations (for history view)
+ * Get all historical conversations
  */
 export async function getAllConversations(): Promise<Conversation[]> {
   const { data, error } = await supabase
@@ -140,17 +163,22 @@ export async function getAllConversations(): Promise<Conversation[]> {
 }
 
 /**
- * Get messages for a specific conversation
+ * Get messages for a specific conversation in specified language
  */
-export async function getConversationMessages(conversationId: number): Promise<Message[]> {
+export async function getConversationMessages(
+  conversationId: number,
+  language: 'en' | 'fr' = 'en'
+): Promise<Message[]> {
+  const messagesTable = getMessagesTable(language);
+
   const { data, error } = await supabase
-    .from('messages')
+    .from(messagesTable)
     .select('*')
     .eq('conversation_id', conversationId)
     .order('message_order', { ascending: true });
 
   if (error) {
-    console.error('Error fetching messages:', error);
+    console.error(`Error fetching ${language} messages:`, error);
     throw error;
   }
 
@@ -158,21 +186,14 @@ export async function getConversationMessages(conversationId: number): Promise<M
     id: index + 1,
     sender: msg.sender as "ChatGPT" | "Claude" | "Human",
     content: msg.content,
-    timestamp: msg.timestamp, // Keep raw ISO timestamp for dynamic formatting in UI
+    timestamp: msg.timestamp,
   }));
 }
 
-/**
- * Format timestamp for display (DEPRECATED - moved to utils/timestamp.utils.ts)
- * Kept for reference but no longer used in the app
- * Use formatRelativeTime() from utils/timestamp.utils.ts instead
- */
-
 // ============================================
-// DAILY SUBJECTS - Store subject for each day
+// DAILY SUBJECTS
 // ============================================
 
-// List of all philosophical subjects (full text)
 const SUBJECTS = [
   "The Nature of Consciousness",
   "Free Will vs Determinism",
@@ -193,14 +214,9 @@ export interface DailySubject {
   created_at: string;
 }
 
-/**
- * Get today's subject from database, or create one if it doesn't exist
- * Returns the full subject text (e.g., "Time and Existence")
- */
 export async function getTodaySubject(): Promise<string> {
-  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+  const today = new Date().toISOString().split('T')[0];
 
-  // Try to get existing subject for today
   const { data, error } = await supabase
     .from('daily_subjects')
     .select('*')
@@ -208,27 +224,19 @@ export async function getTodaySubject(): Promise<string> {
     .single();
 
   if (error && error.code !== 'PGRST116') {
-    // Error other than "not found"
     console.error('Error fetching daily subject:', error);
     throw error;
   }
 
   if (data) {
-    // Subject exists for today
     return data.subject as string;
   }
 
-  // No subject for today, create a new one
   return await createTodaySubject();
 }
 
-/**
- * Create a new subject for today using deterministic selection
- */
 async function createTodaySubject(): Promise<string> {
   const today = new Date().toISOString().split('T')[0];
-
-  // Use day of year for deterministic subject selection
   const date = new Date();
   const dayOfYear = Math.floor(
     (date.getTime() - new Date(date.getFullYear(), 0, 0).getTime()) / 86400000
@@ -236,7 +244,6 @@ async function createTodaySubject(): Promise<string> {
   const index = dayOfYear % SUBJECTS.length;
   const subject = SUBJECTS[index];
 
-  // Save to database
   const { error } = await supabase
     .from('daily_subjects')
     .insert({
@@ -252,9 +259,6 @@ async function createTodaySubject(): Promise<string> {
   return subject;
 }
 
-/**
- * Get subject for a specific date
- */
 export async function getSubjectForDate(date: Date): Promise<string | null> {
   const dateString = date.toISOString().split('T')[0];
 
@@ -266,7 +270,6 @@ export async function getSubjectForDate(date: Date): Promise<string | null> {
 
   if (error) {
     if (error.code === 'PGRST116') {
-      // No subject found for this date
       return null;
     }
     console.error('Error fetching subject for date:', error);
@@ -276,9 +279,6 @@ export async function getSubjectForDate(date: Date): Promise<string | null> {
   return data.subject as string;
 }
 
-/**
- * Get all daily subjects (for historical view)
- */
 export async function getAllDailySubjects(): Promise<DailySubject[]> {
   const { data, error } = await supabase
     .from('daily_subjects')
